@@ -275,19 +275,20 @@ def color_rectangles(coefs, rectangles):
     return values
 
 
-def slice(level=None, level_frac=None):
+def slice(coefs, rectangles, level=None, level_frac=None):
     """Get boundaries intersecting a vertical axis.
 
     Either use the `x == level` or `x == maximum_level * level_frac` axis.
     """
-    if (level is None and level_frac is None)
-            or (level is not None and level_frac is not None):
+    no_arguments_used = level is None and level_frac is None
+    all_arguments_used = level is not None and level_frac is not None
+    if no_arguments_used or all_arguments_used:
         raise ValueError
 
     if level_frac is not None:
         level = int(coefs.shape[1] * level_frac)
 
-    boundaries = rectangles[(rectangles[:, 0] <= slice_) & (slice_ < rectangles[:, 0]+rectangles[:, 2])][:, 1]
+    boundaries = rectangles[(rectangles[:, 0] <= level) & (level < rectangles[:, 0]+rectangles[:, 2])][:, 1]
     boundaries.sort()
     boundaries = list(boundaries) + [coefs.shape[0]]
 
