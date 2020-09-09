@@ -4,6 +4,10 @@
 
 Copyright © Geolearn, Jerome Simon
 https://github.com/GeolearnAI/wavelet_tesselation
+
+Inspired by Wilde et al. (2015) Wavelet Tessellation and its Application to
+Downhole Gamma Data from the Manyingee & Bigrlyi Sandstone-Hosted Uranium
+Deposits.
 """
 
 import time
