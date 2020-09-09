@@ -17,11 +17,7 @@ import matplotlib.pyplot as plt
 from skimage.color import rgb2grey, rgb2hsv
 
 
-# ## Entire LEM-18 drillhole
-
-# Concatenate image while converting and applying mean
-
-onlyfiles = listdir('LEM-37\Export_10cm_slices')
+onlyfiles = listdir('LEM-37/Export_10cm_slices')
 
 im = np.empty([1000 * len(onlyfiles)], dtype=np.float32)
 
@@ -70,7 +66,11 @@ def normalize_coefficients(coefs):
 
 def tesselate(coefs, filter_threshold=.15, min_width_filter=0):
     contours = get_contours(coefs)
-    rectangles = get_rectangles_from_contours(coefs, min_width_filter)
+    rectangles = get_rectangles_from_contours(
+        coefs,
+        contours,
+        min_width_filter,
+    )
     rectangles = delete_overlapping_rectangles(
         coefs,
         rectangles,
@@ -191,8 +191,13 @@ def generate_children(rectangles, verbose=True):
             children = []
 
             for i2, r2 in enumerate(temp):
-
-                if r2[1] >= r1[1] and r2[1] < r1[1] + r1[3] and r2[3] < r1[3] and r2[2] <= r1[2]:
+                is_in = (
+                    r2[1] >= r1[1]
+                    and r2[1] < r1[1] + r1[3]
+                    and r2[3] < r1[3]
+                    and r2[2] <= r1[2]
+                )
+                if is_in:
                     # TODO Time consuming, add unique_id?
                     if not (r1 == r2).all():
                         children.append(i2)  # r2 is a children.
@@ -205,7 +210,9 @@ def generate_children(rectangles, verbose=True):
             max_x = max(upper_x)
 
             # Get the eldest children.
-            children = [temp[i] for i, j in zip(children, upper_x) if j == max_x]
+            children = [
+                temp[i] for i, j in zip(children, upper_x) if j == max_x
+            ]
             children.sort(key=lambda x: x[1])
 
             if r1[2] - max_x != 0:
@@ -224,7 +231,13 @@ def generate_children(rectangles, verbose=True):
             # Add a rectangle between each pair of children.
             for top, bottom in zip(children[:-1], children[1:]):
                 if bottom[1] - top[1] - top[3] != 0:
-                    hor_rect += [(0, top[1]+top[3], max_x, bottom[1]-top[1]-top[3])]
+                    new_rectangle = (
+                        0,
+                        top[1]+top[3],
+                        max_x,
+                        bottom[1]-top[1]-top[3],
+                    )
+                    hor_rect.append(new_rectangle)
                     flag = True
 
         rectangles = rectangles[bool_]
@@ -232,8 +245,10 @@ def generate_children(rectangles, verbose=True):
         rectangles = np.vstack([rectangles, *hor_rect])
 
         non_parents = non_parents[bool_]
-        # Must remain the same length as rectangles
-        non_parents = np.hstack([non_parents, np.zeros(len(hor_rect), dtype=bool)])
+        # Must remain the same length as rectangles.
+        non_parents = np.hstack(
+            [non_parents, np.zeros(len(hor_rect), dtype=bool)]
+        )
 
         if verbose:
             prec, now = now, time.time()
@@ -250,9 +265,19 @@ def generate_children(rectangles, verbose=True):
 def plot_rectangles(coefs, rectangles):
     fig, axes = plt.subplots(1, 1, figsize=(3, 200))
 
-    axes.imshow(coefs, interpolation='nearest', aspect='auto', cmap=mpl.cm.bwr, vmin=-coef_max, vmax=coef_max)
+    coef_max = np.amax(coefs)
+    axes.imshow(
+        coefs,
+        interpolation='nearest',
+        aspect='auto',
+        cmap=mpl.cm.bwr,
+        vmin=-coef_max,
+        vmax=coef_max,
+    )
 
-    p = mpl.collections.PatchCollection([mpl.patches.Rectangle((r[0], r[1]), r[2], r[3]) for r in rectangles])
+    p = mpl.collections.PatchCollection(
+        [mpl.patches.Rectangle((r[0], r[1]), r[2], r[3]) for r in rectangles]
+    )
     p.set_facecolor('none')
     p.set_edgecolor('k')
     axes.add_collection(p)
@@ -288,7 +313,9 @@ def slice(coefs, rectangles, level=None, level_frac=None):
     if level_frac is not None:
         level = int(coefs.shape[1] * level_frac)
 
-    boundaries = rectangles[(rectangles[:, 0] <= level) & (level < rectangles[:, 0]+rectangles[:, 2])][:, 1]
+    rectangle_level_end = rectangles[:, 0] + rectangles[:, 2]
+    is_sliced = (rectangles[:, 0] <= level) & (level < rectangle_level_end)
+    boundaries = rectangles[is_sliced][:, 1]
     boundaries.sort()
     boundaries = list(boundaries) + [coefs.shape[0]]
 
