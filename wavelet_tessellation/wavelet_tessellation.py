@@ -21,22 +21,6 @@ import matplotlib.pyplot as plt
 from skimage.color import rgb2grey, rgb2hsv
 
 
-onlyfiles = listdir('LEM-37/Export_10cm_slices')
-
-im = np.empty([1000 * len(onlyfiles)], dtype=np.float32)
-
-for i, image in enumerate(onlyfiles):
-    temp = np.array(Image.open('LEM-37/Export_10cm_slices/' + image))
-    temp = temp[:, 150:500, :]
-    temp = rgb2grey(temp)
-    temp = np.mean(temp, axis=1).reshape([-1, 1])
-    im[i * 1000:(i + 1) * 1000] = temp
-
-fig, axes = plt.subplots(1, 1, figsize=(1, 20))
-axes.imshow(im, interpolation='none', aspect='auto', cmap=mpl.cm.gray)
-plt.show()
-
-
 def pad(image, pad_fraction=.2):
     """Pad an image to avoid border effects."""
     pad = int(pad_fraction * image.shape[0])
